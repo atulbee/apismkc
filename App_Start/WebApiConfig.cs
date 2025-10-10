@@ -11,7 +11,6 @@ namespace SmkcApi
         {
             // Configure dependency injection
             ConfigureDependencyInjection(config);
-
             // Enable CORS for specific origins only
             var cors = new EnableCorsAttribute(
                 origins: "https://trusted-bank-domain.com", // Replace with actual bank domains

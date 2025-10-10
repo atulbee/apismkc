@@ -88,7 +88,7 @@ namespace SmkcApi.Security
                 return false;
 
             // API key should be at least 32 characters and contain only alphanumeric characters
-            return apiKey.Length >= 32 && System.Text.RegularExpressions.Regex.IsMatch(apiKey, @"^[a-zA-Z0-9]+$");
+            return apiKey.Length >= 32 && System.Text.RegularExpressions.Regex.IsMatch(apiKey, @"^[A-Za-z0-9_]+$");
         }
 
         /// <summary>
