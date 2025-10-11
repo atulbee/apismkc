@@ -38,21 +38,21 @@ namespace SmkcApi
             //   - IOracleDiagnosticsRepository / OracleDiagnosticsRepository
             // Connection string name "OracleDb" must exist in Web.config <connectionStrings>.
             _services[typeof(IOracleConnectionFactory)] = () => new OracleConnectionFactory("OracleDb");
-            _services[typeof(IOracleDiagnosticsRepository)] = () =>
-                new OracleDiagnosticsRepository(
-                    GetService(typeof(IOracleConnectionFactory)) as IOracleConnectionFactory
+            _services[typeof(SmkcApi.Repositories.IOracleConnectionFactory)] = () => new SmkcApi.Repositories.OracleConnectionFactory("OracleDb");
+            _services[typeof(SmkcApi.Repositories.IWaterRepository)] = () =>
+                new SmkcApi.Repositories.WaterRepository(
+                    GetService(typeof(SmkcApi.Repositories.IOracleConnectionFactory)) as SmkcApi.Repositories.IOracleConnectionFactory
                 );
-            _services[typeof(IWaterRepository)] = () => new WaterRepository(GetService(typeof(IOracleConnectionFactory)) as IOracleConnectionFactory);
-            _services[typeof(IWaterService)] = () => new WaterService(GetService(typeof(IWaterRepository)) as IWaterRepository);
+            _services[typeof(SmkcApi.Services.IWaterService)] = () =>
+                new SmkcApi.Services.WaterService(
+                    GetService(typeof(SmkcApi.Repositories.IWaterRepository)) as SmkcApi.Repositories.IWaterRepository
+                );
 
-            // controller factory
-            _services[typeof(WaterController)] = () => new WaterController(GetService(typeof(IWaterService)) as IWaterService);
-            //
-            // Repositories (current in-memory/placeholder)
-            // If you later modify these repos to accept IOracleConnectionFactory,
-            // replace the parameterless new() with factory-injected versions, e.g.:
-            //   new AccountRepository(GetService(typeof(IOracleConnectionFactory)) as IOracleConnectionFactory)
-            //
+            // Controller
+            _services[typeof(SmkcApi.Controllers.WaterController)] = () =>
+                new SmkcApi.Controllers.WaterController(
+                    GetService(typeof(SmkcApi.Services.IWaterService)) as SmkcApi.Services.IWaterService
+                );
             _services[typeof(IAccountRepository)] = () => new AccountRepository();
             _services[typeof(ICustomerRepository)] = () => new CustomerRepository();
             _services[typeof(ITransactionRepository)] = () => new TransactionRepository();
