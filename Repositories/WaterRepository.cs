@@ -15,6 +15,8 @@ namespace SmkcApi.Repositories
         Task<CollectionPostResponse> GetReceiptByBankTxnAsync(string bankTxnId);
         Task<CollectionPostResponse> PostCollectionAsync(CollectionPostRequest req, string idemKey);
         Task<ProcBillDto> GetBillViaProcAsync(string consumerNo);
+        Task<List<ConnectionBalanceMobileDto>> GetConnectionBalanceWithMobileAsync(
+           long connectionNo = 0, string wardCode = "0", string divCode = "0");
     }
 
     public class WaterRepository : IWaterRepository
@@ -24,7 +26,64 @@ namespace SmkcApi.Repositories
 
         private readonly IOracleConnectionFactory _factory;
         public WaterRepository(IOracleConnectionFactory factory) { _factory = factory; }
+        public async Task<List<ConnectionBalanceMobileDto>> GetConnectionBalanceWithMobileAsync(
+           long connectionNo = 0, string wardCode = "0", string divCode = "0")
+        {
+            var results = new List<ConnectionBalanceMobileDto>();
 
+            using (var conn = _factory.Create())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.BindByName = true;
+                cmd.CommandText = "GET_CONNECTION_BALANCE_DATA_WITH_MOBILE"; // if schema: "SCHEMA.GET_CONNECTION_BALANCE_DATA_WITH_MOBILE"
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                cmd.Parameters.Add("p_connection_no", OracleDbType.Int64).Value = connectionNo;
+                cmd.Parameters.Add("p_ward_code", OracleDbType.Varchar2).Value = wardCode;
+                cmd.Parameters.Add("p_div_code", OracleDbType.Varchar2).Value = divCode;
+                var outCursor = new OracleParameter("p_result", OracleDbType.RefCursor, System.Data.ParameterDirection.Output);
+                cmd.Parameters.Add(outCursor);
+
+                await conn.OpenAsync();
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        // Skip rows without mobile
+                        var mobile = reader["mobile_number"] == DBNull.Value ? null : reader["mobile_number"].ToString();
+                        if (string.IsNullOrWhiteSpace(mobile))
+                        {
+                            // Optionally still include but mark mobile null
+                        }
+
+                        DateTime queryDate = DateTime.Now;
+                        if (!(reader["query_date"] is DBNull))
+                            queryDate = Convert.ToDateTime(reader["query_date"], CultureInfo.InvariantCulture);
+
+                        results.Add(new ConnectionBalanceMobileDto
+                        {
+                            ConnectionNumber = reader["connection_number"]?.ToString(),
+                            WardCode = reader["ward_code"]?.ToString(),
+                            WardName = reader["ward_name"]?.ToString(),
+                            DivCode = reader["div_code"]?.ToString(),
+                            DivName = reader["div_name"]?.ToString(),
+                            MobileNumber = mobile,
+                            CustomerNumber = reader["customer_number"]?.ToString(),
+                            TotalBalance = reader["total_balance"] == DBNull.Value ? 0m : Convert.ToDecimal(reader["total_balance"]),
+                            DiscountAmount = reader["discount_amount"] == DBNull.Value ? 0m : Convert.ToDecimal(reader["discount_amount"]),
+                            AfterDiscountBalance = reader["after_discount_balance"] == DBNull.Value ? 0m : Convert.ToDecimal(reader["after_discount_balance"]),
+                            Status = reader["status"]?.ToString(),
+                            QueryType = reader["query_type"]?.ToString(),
+                            SearchCriteria = reader["search_criteria"]?.ToString(),
+                            QueryDate = queryDate
+                        });
+                    }
+                }
+            }
+
+            return results;
+        }
         // ---------------------------
         // Master / Balance (existing)
         // ---------------------------

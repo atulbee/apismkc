@@ -4,6 +4,7 @@ using System.Web.Http.Dependencies;
 
 // Existing namespaces
 using SmkcApi.Controllers;
+using SmkcApi.Infrastructure;
 using SmkcApi.Repositories;
 using SmkcApi.Services;
 
@@ -47,11 +48,16 @@ namespace SmkcApi
                 new SmkcApi.Services.WaterService(
                     GetService(typeof(SmkcApi.Repositories.IWaterRepository)) as SmkcApi.Repositories.IWaterRepository
                 );
-
+            _services[typeof(ISmsSender)] = () => new SmkcApi.Infrastructure.SmsSender();
+            _services[typeof(ISmsService)] = () => new SmkcApi.Services.SmsService(
+                GetService(typeof(IWaterRepository)) as IWaterRepository,
+                GetService(typeof(ISmsSender)) as ISmsSender
+            );
             // Controller
             _services[typeof(SmkcApi.Controllers.WaterController)] = () =>
                 new SmkcApi.Controllers.WaterController(
-                    GetService(typeof(SmkcApi.Services.IWaterService)) as SmkcApi.Services.IWaterService
+                    GetService(typeof(SmkcApi.Services.IWaterService)) as SmkcApi.Services.IWaterService,
+                     GetService(typeof(ISmsService)) as ISmsService
                 );
             _services[typeof(IAccountRepository)] = () => new AccountRepository();
             _services[typeof(ICustomerRepository)] = () => new CustomerRepository();

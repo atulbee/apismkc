@@ -103,10 +103,12 @@
     <Compile Include="Controllers\TransactionController.cs" />
     <Compile Include="Controllers\CustomerController.cs" />
     <Compile Include="Controllers\WaterController.cs" />
+    <Compile Include="Infrastructure\SmsSender.cs" />
     <Compile Include="Models\Account.cs" />
     <Compile Include="Models\AccountStatusUpdateRequest.cs" />
     <Compile Include="Models\CollectionModels.cs" />
     <Compile Include="Models\KycStatusUpdateRequest.cs" />
+    <Compile Include="Models\SmsModels.cs" />
     <Compile Include="Models\Transaction.cs" />
     <Compile Include="Models\Customer.cs" />
     <Compile Include="Models\ApiResponse.cs" />
@@ -123,6 +125,7 @@
     <Compile Include="Services\IAccountService.cs" />
     <Compile Include="Services\AccountService.cs" />
     <Compile Include="Services\ITransactionService.cs" />
+    <Compile Include="Services\SmsService.cs" />
     <Compile Include="Services\TransactionService.cs" />
     <Compile Include="Services\ICustomerService.cs" />
     <Compile Include="Services\CustomerService.cs" />
