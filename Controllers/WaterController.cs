@@ -9,7 +9,7 @@ namespace SmkcApi.Controllers
 {
     [RoutePrefix("api/water")]
     [ShaAuthentication]
-    [IPWhitelist]
+    //[IPWhitelist]
     [RateLimit(maxRequests: 120, timeWindowMinutes: 1)]
     public class WaterController : ApiController
     {

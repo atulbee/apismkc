@@ -22,7 +22,7 @@ namespace SmkcApi.Security
             "127.0.0.1",           // Local development
             "::1",                 // IPv6 localhost
             "192.168.1.0/24",      // Local network range (example)
-            
+            "192.168.40.",
             // Example bank IP addresses - replace with actual bank IPs
             "203.0.113.10",        // Bank's primary IP
             "203.0.113.11",        // Bank's secondary IP
