@@ -18,9 +18,21 @@ namespace SmkcApi.Security
     /// </summary>
     public class IPWhitelistAttribute : AuthorizationFilterAttribute
     {
-        private static readonly string[] DefaultAllowed = new[] { "127.0.0.1", "::1" };
+        private static readonly HashSet<string> WhitelistedIPs = new HashSet<string>
+        {
+            // Add bank's IP addresses here
+            // For development/testing - remove in production
+            "127.0.0.1",           // Local development
+            "::1",                 // IPv6 localhost
+            "192.168.1.0/24",      // Local network range (example)
+            "192.168.40.",
+            // Example bank IP addresses - replace with actual bank IPs
+            "203.0.113.10",        // Bank's primary IP
+            "203.0.113.11",        // Bank's secondary IP
+            "203.0.113.0/24"       // Bank's IP range
+        };
 
-        public override void OnAuthorization(HttpActionContext actionContext)
+        public override void OnActionExecuting(HttpActionContext actionContext)
         {
             base.OnAuthorization(actionContext);
             return;
