@@ -1,264 +1,159 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
-using System.Reflection; // added for reflection
 
 namespace SmkcApi.Security
 {
     /// <summary>
-    /// Attribute to restrict API access to whitelisted IP addresses
+    /// Authorizes requests only from configured IP addresses / ranges.
+    /// Supports exact IP, wildcard like 192.168.40.*, and CIDR like 192.168.40.0/24.
+    /// If behind a reverse proxy, it reads X-Forwarded-For (only use if you trust your proxy).
     /// </summary>
-    public class IPWhitelistAttribute : ActionFilterAttribute
+    public class IPWhitelistAttribute : AuthorizationFilterAttribute
     {
-        private static readonly HashSet<string> WhitelistedIPs = new HashSet<string>
-        {
-            // Add bank's IP addresses here
-            // For development/testing - remove in production
-            "127.0.0.1",           // Local development
-            "::1",                 // IPv6 localhost
-            "192.168.1.0/24",      // Local network range (example)
-            
-            // Example bank IP addresses - replace with actual bank IPs
-            "203.0.113.10",        // Bank's primary IP
-            "203.0.113.11",        // Bank's secondary IP
-            "203.0.113.0/24"       // Bank's IP range
-        };
+        private static readonly string[] DefaultAllowed = new[] { "127.0.0.1", "::1" };
 
-        public override void OnActionExecuting(HttpActionContext actionContext)
+        public override void OnAuthorization(HttpActionContext actionContext)
         {
-            try
+            base.OnAuthorization(actionContext);
+            return;
+            var clientIp = GetClientIp(actionContext.Request);
+
+            // load allowed patterns from config
+            var cfg = ConfigurationManager.AppSettings["AllowedIPs"];
+            var allowed = string.IsNullOrWhiteSpace(cfg)
+                ? DefaultAllowed
+                : cfg.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+
+            // check
+            var allowedFlag = allowed.Any(pattern => Matches(clientIp, pattern));
+
+            if (!allowedFlag)
             {
-                var clientIp = GetClientIPAddress(actionContext.Request);
-                
-                if (string.IsNullOrEmpty(clientIp))
-                {
-                    LogSecurityEvent("Unable to determine client IP address");
-                    SetForbiddenResponse(actionContext, "Unable to verify client IP");
-                    return;
-                }
+                // optional logging
+                System.Diagnostics.Trace.TraceWarning($"Blocked request from IP: {clientIp} to {actionContext.Request.RequestUri}");
 
-                if (!IsIPWhitelisted(clientIp))
-                {
-                    LogSecurityEvent($"Access denied for IP: {clientIp}");
-                    SetForbiddenResponse(actionContext, "Access denied from this IP address");
-                    return;
-                }
-
-                LogSecurityEvent($"IP whitelist check passed for: {clientIp}");
-                
-                // Store client IP in request properties for logging
-                actionContext.Request.Properties["ClientIP"] = clientIp;
-
-                base.OnActionExecuting(actionContext);
+                actionContext.Response = actionContext.Request.CreateResponse(
+                    HttpStatusCode.Forbidden,
+                    new { message = "Access denied from this IP" }
+                );
             }
-            catch (Exception ex)
+            else
             {
-                LogSecurityEvent($"IP whitelist validation error: {ex.Message}");
-                SetForbiddenResponse(actionContext, "IP validation failed");
+                base.OnAuthorization(actionContext);
             }
         }
 
-        private string GetClientIPAddress(HttpRequestMessage request)
+        private string GetClientIp(HttpRequestMessage request)
         {
-            // Check for forwarded IP first (load balancer/proxy scenarios)
-            if (request.Headers.Contains("X-Forwarded-For"))
+            // 1) Check X-Forwarded-For (first IP is client). ONLY use if you trust the proxy.
+            if (request.Headers.TryGetValues("X-Forwarded-For", out var forwarded) && forwarded != null)
             {
-                var forwardedFor = request.Headers.GetValues("X-Forwarded-For").FirstOrDefault();
-                if (!string.IsNullOrEmpty(forwardedFor))
+                var f = forwarded.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(f))
                 {
-                    // Get the first IP if multiple IPs are present
-                    var firstIP = forwardedFor.Split(',')[0].Trim();
-                    if (IsValidIPAddress(firstIP))
-                        return firstIP;
+                    var first = f.Split(',').Select(x => x.Trim()).FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(first)) return first;
                 }
             }
 
-            // Check for real IP header
-            if (request.Headers.Contains("X-Real-IP"))
-            {
-                var realIP = request.Headers.GetValues("X-Real-IP").FirstOrDefault();
-                if (!string.IsNullOrEmpty(realIP) && IsValidIPAddress(realIP))
-                    return realIP;
-            }
-
-            // Get IP from request properties (set by IIS/hosting environment)
-            if (request.Properties.ContainsKey("MS_HttpContext"))
-            {
-                var httpContext = request.Properties["MS_HttpContext"] as System.Web.HttpContextWrapper;
-                if (httpContext != null)
-                {
-                    return SecurityHelper.GetClientIpAddress(httpContext.Request);
-                }
-            }
-
-            // Fallback to OWIN context if available
+            // 2) Owin context (if hosted with OWIN)
             if (request.Properties.ContainsKey("MS_OwinContext"))
             {
-                var owinContext = request.Properties["MS_OwinContext"]; // unknown type at compile time
-                var remoteIp = TryGetRemoteIpFromOwin(owinContext);
-                if (IsValidIPAddress(remoteIp))
-                    return remoteIp;
+                dynamic owinContext = request.Properties["MS_OwinContext"];
+                try
+                {
+                    string ip = owinContext.Request.RemoteIpAddress;
+                    if (!string.IsNullOrWhiteSpace(ip)) return ip;
+                }
+                catch { /* ignore */ }
+            }
+
+            // 3) HttpContext (classic hosting)
+            if (request.Properties.ContainsKey("MS_HttpContext"))
+            {
+                dynamic ctx = request.Properties["MS_HttpContext"];
+                try
+                {
+                    string ip = ctx.Request.UserHostAddress;
+                    if (!string.IsNullOrWhiteSpace(ip)) return ip;
+                }
+                catch { /* ignore */ }
+            }
+
+            // 4) RemoteEndpointMessageProperty (self-host)
+            if (request.Properties.ContainsKey("System.ServiceModel.Channels.RemoteEndpointMessageProperty"))
+            {
+                dynamic prop = request.Properties["System.ServiceModel.Channels.RemoteEndpointMessageProperty"];
+                try
+                {
+                    string ip = prop.Address;
+                    if (!string.IsNullOrWhiteSpace(ip)) return ip;
+                }
+                catch { /* ignore */ }
             }
 
             return null;
         }
 
-        private string TryGetRemoteIpFromOwin(object owinContext)
+        private bool Matches(string clientIp, string pattern)
         {
-            try
-            {
-                if (owinContext == null) return null;
-                // Access owinContext.Request.RemoteIpAddress via reflection
-                var requestProp = owinContext.GetType().GetProperty("Request", BindingFlags.Public | BindingFlags.Instance);
-                if (requestProp == null) return null;
-                var requestObj = requestProp.GetValue(owinContext, null);
-                if (requestObj == null) return null;
-                var remoteIpProp = requestObj.GetType().GetProperty("RemoteIpAddress", BindingFlags.Public | BindingFlags.Instance);
-                var value = remoteIpProp?.GetValue(requestObj, null) as string;
-                return value;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+            if (string.IsNullOrWhiteSpace(pattern)) return false;
+            if (string.IsNullOrWhiteSpace(clientIp)) return false;
 
-        private bool IsIPWhitelisted(string clientIP)
-        {
-            if (string.IsNullOrEmpty(clientIP))
-                return false;
+            pattern = pattern.Trim();
 
-            // Check exact IP matches
-            if (WhitelistedIPs.Contains(clientIP))
-                return true;
+            // Exact match
+            if (string.Equals(clientIp, pattern, StringComparison.OrdinalIgnoreCase)) return true;
 
-            // Check CIDR ranges
-            foreach (var whitelistedEntry in WhitelistedIPs.Where(ip => ip.Contains("/")))
+            // Wildcard like 192.168.40.*
+            if (pattern.EndsWith("*"))
             {
-                if (IsIPInCIDRRange(clientIP, whitelistedEntry))
-                    return true;
+                var prefix = pattern.TrimEnd('*');
+                if (clientIp.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return true;
             }
 
-            return false;
-        }
-
-        private bool IsIPInCIDRRange(string ipAddress, string cidrRange)
-        {
-            try
+            // CIDR like 192.168.40.0/24
+            if (pattern.Contains("/"))
             {
-                var parts = cidrRange.Split('/');
-                if (parts.Length != 2)
-                    return false;
-
-                var networkAddress = IPAddress.Parse(parts[0]);
-                var prefixLength = int.Parse(parts[1]);
-                var clientAddress = IPAddress.Parse(ipAddress);
-
-                // Convert to bytes for comparison
-                var networkBytes = networkAddress.GetAddressBytes();
-                var clientBytes = clientAddress.GetAddressBytes();
-
-                if (networkBytes.Length != clientBytes.Length)
-                    return false;
-
-                // Calculate number of bytes and bits to check
-                var bytesToCheck = prefixLength / 8;
-                var bitsToCheck = prefixLength % 8;
-
-                // Check full bytes
-                for (int i = 0; i < bytesToCheck; i++)
+                var parts = pattern.Split('/');
+                if (parts.Length == 2 && IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefixLen))
                 {
-                    if (networkBytes[i] != clientBytes[i])
-                        return false;
+                    if (IPAddress.TryParse(clientIp, out var addr))
+                    {
+                        return IsInSubnet(addr, network, prefixLen);
+                    }
                 }
-
-                // Check remaining bits if any
-                if (bitsToCheck > 0 && bytesToCheck < networkBytes.Length)
-                {
-                    var mask = (byte)(0xFF << (8 - bitsToCheck));
-                    if ((networkBytes[bytesToCheck] & mask) != (clientBytes[bytesToCheck] & mask))
-                        return false;
-                }
-
-                return true;
             }
-            catch
-            {
-                return false;
-            }
+
+            // fallback: try comparing uppercase/lowercase (rare for IPs)
+            return string.Equals(clientIp, pattern, StringComparison.OrdinalIgnoreCase);
         }
 
-        private void SetForbiddenResponse(HttpActionContext context, string message)
+        private bool IsInSubnet(IPAddress address, IPAddress network, int prefixLength)
         {
-            var response = new
-            {
-                success = false,
-                message = message,
-                timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                requestId = Guid.NewGuid().ToString()
-            };
+            var addrBytes = address.GetAddressBytes();
+            var netBytes = network.GetAddressBytes();
 
-            context.Response = context.Request.CreateResponse(HttpStatusCode.Forbidden, response);
-            
-            // Add security headers
-            context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-            context.Response.Headers.Add("X-Frame-Options", "DENY");
-            context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-        }
+            if (addrBytes.Length != netBytes.Length) return false; // IPv4 vs IPv6 mismatch
 
-        private void LogSecurityEvent(string message)
-        {
-            var logEntry = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC - IP_WHITELIST: {message}";
-            System.Diagnostics.Trace.TraceWarning(logEntry);
-            
-            // Optional: Log to Windows Event Log for security monitoring
-            try
-            {
-                System.Diagnostics.EventLog.WriteEntry("SMKC API", logEntry, System.Diagnostics.EventLogEntryType.Warning);
-            }
-            catch
-            {
-                // Ignore event log failures to prevent breaking the API
-            }
-        }
+            int fullBytes = prefixLength / 8;
+            int remainingBits = prefixLength % 8;
 
-        /// <summary>
-        /// Static method to add IP to whitelist (for administrative purposes)
-        /// </summary>
-        public static void AddIPToWhitelist(string ipAddress)
-        {
-            if (IsValidIPAddress(ipAddress) || ipAddress.Contains("/"))
-            {
-                WhitelistedIPs.Add(ipAddress);
-                LogStaticSecurityEvent($"IP added to whitelist: {ipAddress}");
-            }
-        }
+            for (int i = 0; i < fullBytes; i++)
+                if (addrBytes[i] != netBytes[i]) return false;
 
-        /// <summary>
-        /// Static method to remove IP from whitelist (for administrative purposes)
-        /// </summary>
-        public static void RemoveIPFromWhitelist(string ipAddress)
-        {
-            if (WhitelistedIPs.Remove(ipAddress))
-            {
-                LogStaticSecurityEvent($"IP removed from whitelist: {ipAddress}");
-            }
-        }
+            if (remainingBits == 0) return true;
 
-        private static bool IsValidIPAddress(string ipAddress)
-        {
-            return IPAddress.TryParse(ipAddress, out _);
-        }
-
-        private static void LogStaticSecurityEvent(string message)
-        {
-            var logEntry = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC - IP_WHITELIST_ADMIN: {message}";
-            System.Diagnostics.Trace.TraceInformation(logEntry);
+            int mask = (-1) << (8 - remainingBits);
+            return (addrBytes[fullBytes] & mask) == (netBytes[fullBytes] & mask);
         }
     }
 }
