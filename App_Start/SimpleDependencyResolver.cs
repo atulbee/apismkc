@@ -48,7 +48,9 @@ namespace SmkcApi
                 new SmkcApi.Services.WaterService(
                     GetService(typeof(SmkcApi.Repositories.IWaterRepository)) as SmkcApi.Repositories.IWaterRepository
                 );
-            _services[typeof(ISmsSender)] = () => new SmkcApi.Infrastructure.SmsSender();
+            _services[typeof(ISmsSender)] = () => new SmkcApi.Infrastructure.SmsSender(
+                GetService(typeof(SmkcApi.Repositories.IWaterRepository)) as SmkcApi.Repositories.IWaterRepository
+            );
             _services[typeof(ISmsService)] = () => new SmkcApi.Services.SmsService(
                 GetService(typeof(IWaterRepository)) as IWaterRepository,
                 GetService(typeof(ISmsSender)) as ISmsSender

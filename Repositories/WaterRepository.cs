@@ -17,6 +17,13 @@ namespace SmkcApi.Repositories
         Task<ProcBillDto> GetBillViaProcAsync(string consumerNo);
         Task<List<ConnectionBalanceMobileDto>> GetConnectionBalanceWithMobileAsync(
            long connectionNo = 0, string wardCode = "0", string divCode = "0");
+        Task LogSmsToOracleAsync(
+            string connectionNo,
+            string mobileNo,
+            string message,
+            string responseCode,
+            string responseMessage,
+            string providerResponse);
     }
 
     public class WaterRepository : IWaterRepository
@@ -340,7 +347,47 @@ namespace SmkcApi.Repositories
                 }
             }
         }
+        // ------------------------------------
+        // Log SMS Activity to Oracle
+        // ------------------------------------
+        public async Task LogSmsToOracleAsync(
+            string connectionNo,
+            string mobileNo,
+            string message,
+            string responseCode,
+            string responseMessage,
+            string providerResponse)
+        {
+            try
+            {
+                using (var conn = _factory.Create())
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "PROC_LOG_SMS_ACTIVITY";
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.BindByName = true;
 
+                    cmd.Parameters.Add("p_connection_no", OracleDbType.Decimal)
+                        .Value = string.IsNullOrEmpty(connectionNo) ? (object)DBNull.Value : Convert.ToDecimal(connectionNo);
+                    cmd.Parameters.Add("p_mobile_no", OracleDbType.Varchar2, mobileNo, System.Data.ParameterDirection.Input);
+                    cmd.Parameters.Add("p_message_text", OracleDbType.Varchar2, message, System.Data.ParameterDirection.Input);
+                    cmd.Parameters.Add("p_response_code", OracleDbType.Varchar2, responseCode, System.Data.ParameterDirection.Input);
+                    cmd.Parameters.Add("p_response_message", OracleDbType.Varchar2, responseMessage, System.Data.ParameterDirection.Input);
+                    cmd.Parameters.Add("p_provider_response", OracleDbType.Clob, providerResponse, System.Data.ParameterDirection.Input);
+                    cmd.Parameters.Add("p_sent_by", OracleDbType.Varchar2, "API", System.Data.ParameterDirection.Input);
+
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
+
+                    System.Diagnostics.Trace.TraceInformation(
+                        $"[WaterRepository] SMS Log saved for {mobileNo} (Conn {connectionNo})");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"[WaterRepository] Failed to log SMS: {ex}");
+            }
+        }
         // Detects legacy mojibake (non-ASCII and not already Devanagari), then converts to Unicode Marathi
         private static string ConvertIfLegacy(string s)
         {
