@@ -29,37 +29,27 @@ namespace SmkcApi.Security
             "203.0.113.0/24"       // Bank's IP range
         };
 
+        // IP whitelist disabled per request: allow all IPs
         public override void OnActionExecuting(HttpActionContext actionContext)
         {
             try
             {
+                // Capture client IP for logging but do not enforce whitelist
                 var clientIp = GetClientIPAddress(actionContext.Request);
-
-                if (string.IsNullOrEmpty(clientIp))
+                if (!string.IsNullOrEmpty(clientIp))
                 {
-                    LogSecurityEvent("Unable to determine client IP address");
-                    SetForbiddenResponse(actionContext, "Unable to verify client IP");
-                    return;
+                    actionContext.Request.Properties["ClientIP"] = clientIp;
+                    LogSecurityEvent($"IP whitelist disabled. Allowing IP: {clientIp}");
                 }
 
-                if (!IsIPWhitelisted(clientIp))
-                {
-                    LogSecurityEvent($"Access denied for IP: {clientIp}");
-                    SetForbiddenResponse(actionContext, "Access denied from this IP address");
-                    return;
-                }
-
-                LogSecurityEvent($"IP whitelist check passed for: {clientIp}");
-
-                // Store client IP in request properties for logging
-                actionContext.Request.Properties["ClientIP"] = clientIp;
-
+                // Proceed without restriction
                 base.OnActionExecuting(actionContext);
             }
             catch (Exception ex)
             {
-                LogSecurityEvent($"IP whitelist validation error: {ex.Message}");
-                SetForbiddenResponse(actionContext, "IP validation failed");
+                // Do not block requests if IP extraction fails
+                LogSecurityEvent($"IP whitelist disabled. Error extracting IP: {ex.Message}");
+                base.OnActionExecuting(actionContext);
             }
         }
 
