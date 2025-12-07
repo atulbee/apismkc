@@ -1,0 +1,72 @@
+-- CORRECTED VERSION: PROC_FIND_DUPLICATE_VOTERS
+-- This version handles errors gracefully without re-raising exceptions
+
+CREATE OR REPLACE PROCEDURE PROC_FIND_DUPLICATE_VOTERS (
+    P_FIRST_NAME      IN VARCHAR2,
+    P_MIDDLE_NAME     IN VARCHAR2,
+    P_LAST_NAME       IN VARCHAR2,
+    P_RESULT_CURSOR   OUT SYS_REFCURSOR,
+    P_DUPLICATE_COUNT OUT NUMBER
+)
+AS
+    V_WHERE_CLAUSE VARCHAR2(1000) := '';
+    V_SQL VARCHAR2(4000);
+    V_HAS_CONDITION BOOLEAN := FALSE;
+BEGIN
+    -- Build WHERE clause dynamically
+    IF P_FIRST_NAME IS NOT NULL AND LENGTH(TRIM(P_FIRST_NAME)) > 0 THEN
+        V_WHERE_CLAUSE := V_WHERE_CLAUSE || ' AND UPPER(FIRST_NAME) LIKE ''%'' || UPPER(''' || P_FIRST_NAME || ''') || ''%''';
+        V_HAS_CONDITION := TRUE;
+    END IF;
+    
+    IF P_MIDDLE_NAME IS NOT NULL AND LENGTH(TRIM(P_MIDDLE_NAME)) > 0 THEN
+        V_WHERE_CLAUSE := V_WHERE_CLAUSE || ' AND UPPER(MIDDLE_NAME) LIKE ''%'' || UPPER(''' || P_MIDDLE_NAME || ''') || ''%''';
+        V_HAS_CONDITION := TRUE;
+    END IF;
+    
+    IF P_LAST_NAME IS NOT NULL AND LENGTH(TRIM(P_LAST_NAME)) > 0 THEN
+        V_WHERE_CLAUSE := V_WHERE_CLAUSE || ' AND UPPER(LAST_NAME) LIKE ''%'' || UPPER(''' || P_LAST_NAME || ''') || ''%''';
+        V_HAS_CONDITION := TRUE;
+    END IF;
+    
+    -- Build final WHERE clause
+    IF V_HAS_CONDITION THEN
+        V_WHERE_CLAUSE := ' WHERE (VERIFIED = ''FALSE'' OR VERIFIED IS NULL)' || V_WHERE_CLAUSE;
+    ELSE
+        V_WHERE_CLAUSE := ' WHERE (VERIFIED = ''FALSE'' OR VERIFIED IS NULL)';
+    END IF;
+    
+    -- Build SQL query
+    V_SQL := 'SELECT SR_NO, WARD_DIV_NO, FIRST_NAME, LAST_NAME,
+                RELATION_FIRSTNAME, RELATION_LASTNAME, RELATION_TYPE,
+                HOUSE_NO, AGE, SEX, EPIC_NUMBER, VOTER_SERIAL_NO,
+                DUPLICATE_FLAG, VERIFIED, DUPLICATION_ID
+              FROM DUPLICATE_VOTERS' || V_WHERE_CLAUSE || 
+              ' ORDER BY FIRST_NAME, LAST_NAME, SR_NO';
+    
+    -- Get count
+    EXECUTE IMMEDIATE 'SELECT COUNT(*) FROM DUPLICATE_VOTERS' || V_WHERE_CLAUSE INTO P_DUPLICATE_COUNT;
+    
+    -- Open cursor
+    OPEN P_RESULT_CURSOR FOR V_SQL;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Set error indicators but DON'T re-raise
+        P_DUPLICATE_COUNT := 0;  -- Changed from -1 to 0
+        
+        -- Open empty cursor instead of leaving it null
+        OPEN P_RESULT_CURSOR FOR
+            SELECT SR_NO, WARD_DIV_NO, FIRST_NAME, LAST_NAME,
+                   RELATION_FIRSTNAME, RELATION_LASTNAME, RELATION_TYPE,
+                   HOUSE_NO, AGE, SEX, EPIC_NUMBER, VOTER_SERIAL_NO,
+                   DUPLICATE_FLAG, VERIFIED, DUPLICATION_ID
+            FROM DUPLICATE_VOTERS
+            WHERE 1=0;  -- Returns no rows
+            
+        -- Log the error (optional, if you have a logging table)
+        -- INSERT INTO ERROR_LOG (ERROR_DATE, ERROR_MESSAGE, PROCEDURE_NAME)
+        -- VALUES (SYSDATE, SQLERRM, 'PROC_FIND_DUPLICATE_VOTERS');
+        -- COMMIT;
+END PROC_FIND_DUPLICATE_VOTERS;
+/

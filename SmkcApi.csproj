@@ -94,28 +94,42 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
+    <Content Include="SQL\PROC_FIND_DUPLICATE_VOTERS_CORRECTED.sql" />
+    <Content Include="TestClient.html" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="App_Start\SimpleDependencyResolver.cs" />
     <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\BookingsController.cs" />
+    <Compile Include="Controllers\CitizenController.cs" />
+    <Compile Include="Controllers\DepartmentController.cs" />
+    <Compile Include="Controllers\SlotsController.cs" />
     <Compile Include="Controllers\TransactionController.cs" />
     <Compile Include="Controllers\CustomerController.cs" />
+    <Compile Include="Controllers\UtilitiesController.cs" />
+    <Compile Include="Controllers\VotersController.cs" />
     <Compile Include="Controllers\WaterController.cs" />
     <Compile Include="Infrastructure\SmsSender.cs" />
     <Compile Include="Models\Account.cs" />
     <Compile Include="Models\AccountStatusUpdateRequest.cs" />
     <Compile Include="Models\CollectionModels.cs" />
     <Compile Include="Models\KycStatusUpdateRequest.cs" />
+    <Compile Include="Models\ParkBookingModels.cs" />
     <Compile Include="Models\SmsModels.cs" />
     <Compile Include="Models\Transaction.cs" />
     <Compile Include="Models\Customer.cs" />
     <Compile Include="Models\ApiResponse.cs" />
     <Compile Include="Models\TransactionReversalRequest.cs" />
+    <Compile Include="Models\VoterModels.cs" />
     <Compile Include="Models\WaterModels.cs" />
+    <Compile Include="Repositories\IParkBookingRepository.cs" />
+    <Compile Include="Repositories\IVoterRepository.cs" />
     <Compile Include="Repositories\OracleConnectionFactory.cs" />
     <Compile Include="Repositories\OracleDiagnosticsRepository.cs" />
+    <Compile Include="Repositories\ParkBookingRepository.cs" />
+    <Compile Include="Repositories\VoterRepository.cs" />
     <Compile Include="Repositories\WaterRepository.cs" />
     <Compile Include="Security\ShaAuthenticationAttribute.cs" />
     <Compile Include="Security\ApiKeyAuthenticationHandler.cs" />
@@ -124,7 +138,10 @@
     <Compile Include="Security\IPWhitelistAttribute.cs" />
     <Compile Include="Services\IAccountService.cs" />
     <Compile Include="Services\AccountService.cs" />
+    <Compile Include="Services\IParkBookingService.cs" />
     <Compile Include="Services\ITransactionService.cs" />
+    <Compile Include="Services\IVoterService.cs" />
+    <Compile Include="Services\ParkBookingService.cs" />
     <Compile Include="Services\SmsService.cs" />
     <Compile Include="Services\TransactionService.cs" />
     <Compile Include="Services\ICustomerService.cs" />
@@ -139,6 +156,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\VoterService.cs" />
     <Compile Include="Services\WaterService.cs" />
     <Compile Include="Utils\IsmMarathiConverter.cs" />
     <Compile Include="Utils\LegacyIndicConverter.cs" />
@@ -147,7 +165,29 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Documentation\API_DOCUMENTATION.md" />
+    <Content Include="IMPLEMENTATION_GUIDE.md" />
+    <Content Include="IMPLEMENTATION_SUMMARY.md" />
+    <Content Include="DEPLOYMENT_READY.md" />
+    <Content Include="INDEX.md" />
+    <Content Include="API_AUTHENTICATION_GUIDE.md" />
+    <Content Include="COMPLETE_DELIVERY_SUMMARY.md" />
+    <Content Include="CORRECTED_CREDENTIALS.md" />
+    <Content Include="ORACLE_PROCEDURES_GUIDE.md" />
+    <Content Include="ORACLE_EXCEPTION_FIX.md" />
+    <Content Include="ORACLEDECIMAL_FIX_COMPLETE.md" />
     <None Include="packages.config" />
+    <Content Include="QUICK_REFERENCE.md" />
+    <Content Include="PROJECT_CHECKLIST.md" />
+    <Content Include="RefernceDocuments\DuplicateVoterAPI_Endpoints.json" />
+    <Content Include="Postman\DuplicateVoterAPI.postman_environment.json" />
+    <Content Include="Postman\POSTMAN_TESTING_GUIDE.md" />
+    <Content Include="VOTER_API_SUMMARY.md" />
+    <Content Include="Test-VoterAPI.ps1" />
+    <Content Include="READY_TO_TEST.md" />
+    <Content Include="QUICK_FIX_SUMMARY.md" />
+    <Content Include="POSTMAN_HEADERS_FIXED.md" />
+    <Content Include="Postman\DuplicateVoterAPI.postman_collection.json" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

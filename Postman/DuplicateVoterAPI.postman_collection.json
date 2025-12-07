@@ -1,0 +1,211 @@
+{
+  "info": {
+    "name": "SMKCAPI - Duplicate Voter API",
+    "_postman_id": "a0f7b2de-0000-4cde-aaaa-000000000001",
+    "description": "Properly formatted Postman v2.1 collection for SMKCAPI Duplicate Voter endpoints with HMAC-SHA256 auth.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Generate Unix timestamp (seconds)",
+          "const timestamp = Math.floor(Date.now() / 1000).toString();",
+          "",
+          "// Request body (empty for GET)",
+          "let requestBody = '';",
+          "if (pm.request && pm.request.body && pm.request.body.mode === 'raw' && pm.request.body.raw) {",
+          "  requestBody = pm.request.body.raw;",
+          "}",
+          "",
+          "// Credentials",
+          "const apiKey = pm.variables.get('apiKey') || pm.environment.get('apiKey');",
+          "const secretKey = pm.variables.get('secretKey') || pm.environment.get('secretKey');",
+          "",
+          "// Method & path",
+          "const httpMethod = pm.request.method.toUpperCase();",
+          "const requestUri = pm.request.url.getPathWithQuery();",
+          "",
+          "// String to sign: METHOD + URI + BODY + TIMESTAMP + APIKEY",
+          "const stringToSign = httpMethod + requestUri + requestBody + timestamp + apiKey;",
+          "const signature = CryptoJS.HmacSHA256(stringToSign, secretKey).toString(CryptoJS.enc.Base64);",
+          "",
+          "pm.variables.set('timestamp', timestamp);",
+          "pm.variables.set('signature', signature);",
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:57031" },
+    { "key": "apiKey", "value": "TEST_API_KEY_12345678901234567890123456789012" },
+    { "key": "secretKey", "value": "TEST_SECRET_KEY_67890ABCDEFGHIJ1234567890" },
+    { "key": "timestamp", "value": "" },
+    { "key": "signature", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Find Duplicate Voters",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Abhishek\",\n  \"middleName\": \"Ajitkumar\",\n  \"lastName\": \"Bedkihale\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/find-duplicates",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "find-duplicates"]
+        }
+      }
+    },
+    {
+      "name": "Get Verification Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/verification-status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "verification-status"]
+        }
+      }
+    },
+    {
+      "name": "Get All Duplicate Groups",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/duplicate-groups",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "duplicate-groups"]
+        }
+      }
+    },
+    {
+      "name": "Get Duplicate Group by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/duplicate-groups?duplicationId=1001",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "duplicate-groups"],
+          "query": [ { "key": "duplicationId", "value": "1001" } ]
+        }
+      }
+    },
+    {
+      "name": "Get Voter by SR_NO",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/201",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "201"]
+        }
+      }
+    },
+    {
+      "name": "Get Unverified Count",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/unverified-count",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "unverified-count"]
+        }
+      }
+    },
+    {
+      "name": "Mark as Duplicates (TRUE)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"srNoArray\": [201, 202, 203],\n  \"isDuplicate\": true,\n  \"remarks\": \"Same person\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/mark-duplicates",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "mark-duplicates"]
+        }
+      }
+    },
+    {
+      "name": "Mark as NOT Duplicates (FALSE)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"srNoArray\": [204, 205],\n  \"isDuplicate\": false,\n  \"remarks\": \"Different persons\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/mark-duplicates",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "mark-duplicates"]
+        }
+      }
+    },
+    {
+      "name": "Reset Verification (Admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/reset-verification",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "reset-verification"]
+        }
+      }
+    }
+  ]
+}

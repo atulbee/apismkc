@@ -1,0 +1,251 @@
+{
+  "info": {
+    "name": "Duplicate Voter API",
+    "description": ".NET Framework 4.5 API endpoints for managing duplicate voter records",
+    "version": "1.0.0"
+  },
+  "endpoints": [
+    {
+      "name": "Find Duplicate Voters",
+      "method": "POST",
+      "url": "/api/voters/find-duplicates",
+      "description": "Search for potential duplicate voter records (returns only unverified records)",
+      "request": {
+        "body": {
+          "firstName": "string (optional)",
+          "middleName": "string (optional)",
+          "lastName": "string (optional)"
+        },
+        "example": {
+          "firstName": "Abhishek",
+          "middleName": "Ajitkumar",
+          "lastName": "Bedkihale"
+        }
+      },
+      "response": {
+        "duplicateCount": "number",
+        "records": [
+          {
+            "srNo": "number",
+            "wardDivNo": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "relationFirstname": "string",
+            "relationLastname": "string",
+            "relationType": "string",
+            "houseNo": "string",
+            "age": "number",
+            "sex": "string",
+            "epicNumber": "string",
+            "voterSerialNo": "string"
+          }
+        ]
+      },
+      "oracleProcedure": "PROC_FIND_DUPLICATE_VOTERS",
+      "parameters": [
+        "P_FIRST_NAME IN VARCHAR2",
+        "P_MIDDLE_NAME IN VARCHAR2",
+        "P_LAST_NAME IN VARCHAR2",
+        "P_RESULT_CURSOR OUT SYS_REFCURSOR",
+        "P_DUPLICATE_COUNT OUT NUMBER"
+      ]
+    },
+    {
+      "name": "Mark Duplicate Voters",
+      "method": "POST",
+      "url": "/api/voters/mark-duplicates",
+      "description": "Mark a group of voters as duplicates or not duplicates",
+      "request": {
+        "body": {
+          "srNoArray": "number[] (array of SR_NO values)",
+          "isDuplicate": "boolean (true for duplicate, false for not duplicate)",
+          "remarks": "string (optional)"
+        },
+        "example": {
+          "srNoArray": [201, 202],
+          "isDuplicate": true,
+          "remarks": "Same person - Abhishek Ajitkumar Bedkihale"
+        }
+      },
+      "response": {
+        "status": "string (SUCCESS/ERROR message)",
+        "duplicationId": "number (null if marking as not duplicate)"
+      },
+      "oracleProcedure": "PROC_MARK_DUPLICATES",
+      "parameters": [
+        "P_SR_NO_ARRAY IN SYS.ODCINUMBERLIST",
+        "P_IS_DUPLICATE IN VARCHAR2 (TRUE/FALSE)",
+        "P_REMARKS IN VARCHAR2",
+        "P_DUPLICATION_ID OUT NUMBER",
+        "P_STATUS OUT VARCHAR2"
+      ]
+    },
+    {
+      "name": "Get Verification Status",
+      "method": "GET",
+      "url": "/api/voters/verification-status",
+      "description": "Get overall verification status and statistics",
+      "request": {
+        "body": null
+      },
+      "response": {
+        "totalRecords": "number",
+        "verifiedRecords": "number",
+        "unverifiedRecords": "number",
+        "duplicateRecords": "number",
+        "notDuplicateRecords": "number",
+        "verificationPercentage": "number"
+      },
+      "oracleProcedure": "PROC_GET_VERIFICATION_STATUS",
+      "parameters": [
+        "P_TOTAL_RECORDS OUT NUMBER",
+        "P_VERIFIED_RECORDS OUT NUMBER",
+        "P_UNVERIFIED_RECORDS OUT NUMBER",
+        "P_DUPLICATE_RECORDS OUT NUMBER",
+        "P_NOT_DUPLICATE_RECORDS OUT NUMBER",
+        "P_VERIFICATION_PERCENTAGE OUT NUMBER"
+      ]
+    },
+    {
+      "name": "Get Duplicate Groups",
+      "method": "GET",
+      "url": "/api/voters/duplicate-groups",
+      "description": "Get all duplicate groups with their records",
+      "request": {
+        "queryParameters": {
+          "duplicationId": "number (optional, filter by specific group)"
+        }
+      },
+      "response": {
+        "groups": [
+          {
+            "duplicationId": "number",
+            "srNoList": "string (comma-separated)",
+            "markedDate": "datetime",
+            "markedBy": "string",
+            "remarks": "string",
+            "records": [
+              {
+                "srNo": "number",
+                "firstName": "string",
+                "lastName": "string",
+                "relationFirstname": "string",
+                "epicNumber": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "sql": "SELECT dr.*, dv.* FROM DUPLICATION_RECORDS dr JOIN DUPLICATE_VOTERS dv ON dv.DUPLICATION_ID = dr.DUPLICATION_ID"
+    },
+    {
+      "name": "Get Voter by SR_NO",
+      "method": "GET",
+      "url": "/api/voters/{srNo}",
+      "description": "Get single voter record details",
+      "request": {
+        "urlParameters": {
+          "srNo": "number"
+        }
+      },
+      "response": {
+        "srNo": "number",
+        "wardDivNo": "string",
+        "firstName": "string",
+        "lastName": "string",
+        "relationFirstname": "string",
+        "relationLastname": "string",
+        "relationType": "string",
+        "houseNo": "string",
+        "age": "number",
+        "sex": "string",
+        "epicNumber": "string",
+        "voterSerialNo": "string",
+        "duplicateFlag": "string",
+        "verified": "string",
+        "duplicationId": "number"
+      },
+      "sql": "SELECT * FROM DUPLICATE_VOTERS WHERE SR_NO = :srNo"
+    },
+    {
+      "name": "Reset Verification",
+      "method": "POST",
+      "url": "/api/voters/reset-verification",
+      "description": "Reset all verification data (for testing/admin purposes)",
+      "request": {
+        "body": null
+      },
+      "response": {
+        "status": "string",
+        "recordsReset": "number",
+        "groupsDeleted": "number"
+      },
+      "sql": [
+        "UPDATE DUPLICATE_VOTERS SET DUPLICATE_FLAG='UNKNOWN', DUPLICATION_ID=NULL, VERIFIED='FALSE'",
+        "DELETE FROM DUPLICATION_RECORDS"
+      ]
+    },
+    {
+      "name": "Get Unverified Count",
+      "method": "GET",
+      "url": "/api/voters/unverified-count",
+      "description": "Get count of unverified records",
+      "request": {
+        "body": null
+      },
+      "response": {
+        "unverifiedCount": "number"
+      },
+      "sql": "SELECT COUNT(*) FROM DUPLICATE_VOTERS WHERE VERIFIED='FALSE' OR VERIFIED IS NULL"
+    }
+  ],
+  "databaseConnection": {
+    "connectionString": "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=SMKC-SCAN)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=hcldb)));User Id=ws;Password=YOUR_PASSWORD;",
+    "provider": "Oracle.ManagedDataAccess.Client",
+    "schema": "ws"
+  },
+  "sharedModels": {
+    "VoterRecord": {
+      "SrNo": "int",
+      "WardDivNo": "string",
+      "FirstName": "string",
+      "LastName": "string",
+      "RelationFirstname": "string",
+      "RelationLastname": "string",
+      "RelationType": "string",
+      "HouseNo": "string",
+      "Age": "int?",
+      "Sex": "string",
+      "EpicNumber": "string",
+      "VoterSerialNo": "string",
+      "DuplicateFlag": "string",
+      "Verified": "string",
+      "DuplicationId": "int?"
+    },
+    "FindDuplicatesRequest": {
+      "FirstName": "string",
+      "MiddleName": "string",
+      "LastName": "string"
+    },
+    "MarkDuplicatesRequest": {
+      "SrNoArray": "List<int>",
+      "IsDuplicate": "bool",
+      "Remarks": "string"
+    },
+    "VerificationStatus": {
+      "TotalRecords": "int",
+      "VerifiedRecords": "int",
+      "UnverifiedRecords": "int",
+      "DuplicateRecords": "int",
+      "NotDuplicateRecords": "int",
+      "VerificationPercentage": "decimal"
+    }
+  },
+  "notes": {
+    "authentication": "Add appropriate authentication/authorization based on your requirements",
+    "errorHandling": "All endpoints should return proper HTTP status codes (200, 400, 500)",
+    "oracleArrayParameter": "For P_SR_NO_ARRAY, use Oracle.ManagedDataAccess.Types.OracleDecimal[] with OracleDbType.Int32 and ArrayBindSize",
+    "cursorHandling": "For SYS_REFCURSOR output, use OracleDbType.RefCursor and OracleDataReader",
+    "netFramework": ".NET Framework 4.5 with Oracle.ManagedDataAccess NuGet package"
+  }
+}

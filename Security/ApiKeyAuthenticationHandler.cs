@@ -13,19 +13,31 @@ namespace SmkcApi.Security
     {
         private static readonly HashSet<string> ValidApiKeys = new HashSet<string>
         {
-            // In production, these should be stored in a secure database
-            // For demo purposes, using hardcoded values
+            // Production API Keys
             "BANK001_4f8b2c7d9e3a1f6b8c5d0e9a2f7b4c8d1e6f9a3b7c2d5e8f0a9b6c3d7e1f4a8b5",
-            "BANK002_9c6f3a8e1d4b7c0f2e5a8b1c4d7f0a3e6b9c2d5f8a1b4c7e0d3f6a9b2c5d8e1f4"
+            "BANK002_9c6f3a8e1d4b7c0f2e5a8b1c4d7f0a3e6b9c2d5f8a1b4c7e0d3f6a9b2c5d8e1f4",
+            
+            // Test API Keys for localhost development
+            "TEST_API_KEY_12345678901234567890123456789012",
+            "DEV_API_KEY_ABCDE67890FGHIJ12345KLMNO67890",
+            "ADMIN_API_KEY_XYZ12345678901234567890ABC456"
         };
 
         private static readonly Dictionary<string, string> ApiKeySecrets = new Dictionary<string, string>
         {
-            // In production, these should be stored securely and encrypted
+            // Production secrets
             ["BANK001_4f8b2c7d9e3a1f6b8c5d0e9a2f7b4c8d1e6f9a3b7c2d5e8f0a9b6c3d7e1f4a8b5"] = 
                 "S3cur3K3y!B4nk001#2024$Pr0d&V3ryL0ngS3cr3tK3yF0rB4nk1ng",
             ["BANK002_9c6f3a8e1d4b7c0f2e5a8b1c4d7f0a3e6b9c2d5f8a1b4c7e0d3f6a9b2c5d8e1f4"] = 
-                "An0th3rS3cur3K3y!B4nk002#2024$V3ryS3cr3tK3yF0rB4nk2ng"
+                "An0th3rS3cur3K3y!B4nk002#2024$V3ryS3cr3tK3yF0rB4nk2ng",
+            
+            // Test secrets for localhost development
+            ["TEST_API_KEY_12345678901234567890123456789012"] = 
+                "TEST_SECRET_KEY_67890ABCDEFGHIJ1234567890",
+            ["DEV_API_KEY_ABCDE67890FGHIJ12345KLMNO67890"] = 
+                "DEV_SECRET_KEY_FGHIJ67890KLMNO12345PQRST",
+            ["ADMIN_API_KEY_XYZ12345678901234567890ABC456"] = 
+                "ADMIN_SECRET_KEY_ABC45678901234567890DEF"
         };
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

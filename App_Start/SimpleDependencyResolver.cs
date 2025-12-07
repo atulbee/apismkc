@@ -66,6 +66,28 @@ namespace SmkcApi
             _services[typeof(ITransactionRepository)] = () => new TransactionRepository();
 
             //
+            // Park Booking Services
+            //
+            _services[typeof(IParkBookingRepository)] = () => new ParkBookingRepository(
+                GetService(typeof(OracleConnectionFactory)) as OracleConnectionFactory
+            );
+
+            _services[typeof(IParkBookingService)] = () => new ParkBookingService(
+                GetService(typeof(IParkBookingRepository)) as IParkBookingRepository
+            );
+
+            //
+            // Voter Services (Duplicate Voter Management)
+            //
+            _services[typeof(IVoterRepository)] = () => new VoterRepository(
+                GetService(typeof(SmkcApi.Repositories.IOracleConnectionFactory)) as SmkcApi.Repositories.IOracleConnectionFactory
+            );
+
+            _services[typeof(IVoterService)] = () => new VoterService(
+                GetService(typeof(IVoterRepository)) as IVoterRepository
+            );
+
+            //
             // Services
             //
             _services[typeof(IAccountService)] = () => new AccountService(
@@ -95,6 +117,36 @@ namespace SmkcApi
 
             _services[typeof(TransactionController)] = () => new TransactionController(
                 GetService(typeof(ITransactionService)) as ITransactionService
+            );
+
+            // Park Booking Controllers
+            _services[typeof(CitizenController)] = () => new CitizenController(
+                GetService(typeof(IParkBookingService)) as IParkBookingService
+            );
+
+            _services[typeof(SlotsController)] = () => new SlotsController(
+                GetService(typeof(IParkBookingService)) as IParkBookingService
+            );
+
+            _services[typeof(BookingsController)] = () => new BookingsController(
+                GetService(typeof(IParkBookingService)) as IParkBookingService
+            );
+
+            _services[typeof(DepartmentController)] = () => new DepartmentController(
+                GetService(typeof(IParkBookingService)) as IParkBookingService
+            );
+
+            _services[typeof(UtilitiesController)] = () => new UtilitiesController(
+                GetService(typeof(IParkBookingService)) as IParkBookingService
+            );
+
+            _services[typeof(ReportsController)] = () => new ReportsController(
+                GetService(typeof(IParkBookingService)) as IParkBookingService
+            );
+
+            // Voter Controllers
+            _services[typeof(VotersController)] = () => new VotersController(
+                GetService(typeof(IVoterService)) as IVoterService
             );
 
             // (Optional) Diagnostics controller if you add one:
