@@ -45,5 +45,10 @@ namespace SmkcApi.Repositories
         /// Get count of unverified records
         /// </summary>
         Task<int> GetUnverifiedCountAsync();
+
+        /// <summary>
+        /// Get voter report based on criteria
+        /// </summary>
+        Task<VoterReportResponse> GetVoterReportAsync(VoterReportRequest request);
     }
 }

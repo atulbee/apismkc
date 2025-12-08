@@ -239,6 +239,38 @@ namespace SmkcApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Voter report with rich filters and pagination
+        /// POST: /api/voters/report
+        /// </summary>
+        [HttpPost]
+        [Route("report")]
+        public async Task<IHttpActionResult> GetVoterReport([FromBody] VoterReportRequest request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return Content(HttpStatusCode.BadRequest,
+                        VoterReportResponse.CreateError("Request body is required", "MISSING_REQUEST_BODY"));
+                }
+
+                var result = await _voterService.GetVoterReportAsync(request);
+
+                if (!result.Success)
+                {
+                    return Content(HttpStatusCode.BadRequest, result);
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                LogError("GetVoterReport", ex);
+                return InternalServerError();
+            }
+        }
+
         private void LogError(string action, Exception ex)
         {
             var logEntry = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC - VOTERS_CONTROLLER_{action.ToUpper()}_ERROR: {ex.Message}";

@@ -404,6 +404,107 @@ namespace SmkcApi.Repositories
             }
         }
 
+        public async Task<VoterReportResponse> GetVoterReportAsync(VoterReportRequest request)
+        {
+            try
+            {
+                var records = new List<VoterReportItem>();
+                int totalCount = 0;
+
+                using (var connection = _connectionFactory.Create())
+                {
+                    await connection.OpenAsync();
+
+                    using (var command = new OracleCommand("PROC_GET_VOTER_REPORT", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.CommandTimeout = 60;
+
+                        // Input parameters (use DBNull for nulls)
+                        command.Parameters.Add("P_FIRST_NAME", OracleDbType.Varchar2).Value = (object)request.FirstName ?? DBNull.Value;
+                        command.Parameters.Add("P_MIDDLE_NAME", OracleDbType.Varchar2).Value = (object)request.MiddleName ?? DBNull.Value;
+                        command.Parameters.Add("P_LAST_NAME", OracleDbType.Varchar2).Value = (object)request.LastName ?? DBNull.Value;
+                        command.Parameters.Add("P_WARD_DIV_NO", OracleDbType.Varchar2).Value = (object)request.WardDivNo ?? DBNull.Value;
+                        command.Parameters.Add("P_EPIC_NUMBER", OracleDbType.Varchar2).Value = (object)request.EpicNumber ?? DBNull.Value;
+                        command.Parameters.Add("P_VOTER_SERIAL_NO", OracleDbType.Varchar2).Value = (object)request.VoterSerialNo ?? DBNull.Value;
+                        command.Parameters.Add("P_SEX", OracleDbType.Varchar2).Value = (object)request.Sex ?? DBNull.Value;
+                        command.Parameters.Add("P_AGE_MIN", OracleDbType.Decimal).Value = (object)request.AgeMin ?? DBNull.Value;
+                        command.Parameters.Add("P_AGE_MAX", OracleDbType.Decimal).Value = (object)request.AgeMax ?? DBNull.Value;
+                        command.Parameters.Add("P_DUPLICATE_FLAG", OracleDbType.Varchar2).Value = (object)request.DuplicateFlag ?? DBNull.Value;
+                        command.Parameters.Add("P_VERIFIED", OracleDbType.Varchar2).Value = (object)request.Verified ?? DBNull.Value;
+                        command.Parameters.Add("P_DUPLICATION_ID", OracleDbType.Decimal).Value = (object)request.DuplicationId ?? DBNull.Value;
+                        command.Parameters.Add("P_MARKED_FROM_DATE", OracleDbType.Date).Value = (object)request.MarkedFromDate ?? DBNull.Value;
+                        command.Parameters.Add("P_MARKED_TO_DATE", OracleDbType.Date).Value = (object)request.MarkedToDate ?? DBNull.Value;
+                        command.Parameters.Add("P_SORT_BY", OracleDbType.Varchar2).Value = (object)(request.SortBy ?? "SR_NO");
+                        command.Parameters.Add("P_SORT_DIR", OracleDbType.Varchar2).Value = (object)(request.SortDir ?? "ASC");
+                        command.Parameters.Add("P_PAGE_NUMBER", OracleDbType.Decimal).Value = (object)request.PageNumber ?? DBNull.Value;
+                        command.Parameters.Add("P_PAGE_SIZE", OracleDbType.Decimal).Value = (object)request.PageSize ?? DBNull.Value;
+
+                        // Output parameters
+                        command.Parameters.Add("P_RESULT_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                        var totalParam = command.Parameters.Add("P_TOTAL_COUNT", OracleDbType.Decimal);
+                        totalParam.Direction = ParameterDirection.Output;
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                records.Add(new VoterReportItem
+                                {
+                                    SrNo = GetInt32OrDefault((OracleDataReader)reader, "SR_NO"),
+                                    WardDivNo = GetStringOrDefault((OracleDataReader)reader, "WARD_DIV_NO"),
+                                    FirstName = GetStringOrDefault((OracleDataReader)reader, "FIRST_NAME"),
+                                    LastName = GetStringOrDefault((OracleDataReader)reader, "LAST_NAME"),
+                                    RelationFirstname = GetStringOrDefault((OracleDataReader)reader, "RELATION_FIRSTNAME"),
+                                    RelationLastname = GetStringOrDefault((OracleDataReader)reader, "RELATION_LASTNAME"),
+                                    RelationType = GetStringOrDefault((OracleDataReader)reader, "RELATION_TYPE"),
+                                    HouseNo = GetStringOrDefault((OracleDataReader)reader, "HOUSE_NO"),
+                                    Age = GetNullableInt32((OracleDataReader)reader, "AGE"),
+                                    Sex = GetStringOrDefault((OracleDataReader)reader, "SEX"),
+                                    EpicNumber = GetStringOrDefault((OracleDataReader)reader, "EPIC_NUMBER"),
+                                    VoterSerialNo = GetStringOrDefault((OracleDataReader)reader, "VOTER_SERIAL_NO"),
+                                    DuplicateFlag = GetStringOrDefault((OracleDataReader)reader, "DUPLICATE_FLAG"),
+                                    Verified = GetStringOrDefault((OracleDataReader)reader, "VERIFIED"),
+                                    DuplicationId = GetNullableInt32((OracleDataReader)reader, "DUPLICATION_ID"),
+                                    MarkedDate = reader["MARKED_DATE"] != DBNull.Value ? Convert.ToDateTime(reader["MARKED_DATE"]) : (DateTime?)null,
+                                    MarkedBy = reader["MARKED_BY"]?.ToString(),
+                                    Remarks = reader["REMARKS"]?.ToString()
+                                });
+                            }
+                        }
+
+                        var totalVal = totalParam.Value;
+                        var total = 0;
+                        if (totalVal != null && totalVal != DBNull.Value)
+                        {
+                            if (totalVal is OracleDecimal od)
+                                total = od.IsNull ? 0 : (int)od.Value;
+                            else
+                                total = Convert.ToInt32(totalVal);
+                        }
+                        else
+                        {
+                            total = records.Count;
+                        }
+
+                        return VoterReportResponse.CreateSuccess(total, records);
+                    }
+                }
+            }
+            catch (OracleException oex)
+            {
+                var msg = $"Oracle error: {oex.Message}";
+                System.Diagnostics.Trace.TraceError(msg);
+                return VoterReportResponse.CreateError(msg, "ORACLE_ERROR");
+            }
+            catch (Exception ex)
+            {
+                var msg = $"Error generating voter report: {ex.Message}";
+                System.Diagnostics.Trace.TraceError(msg);
+                return VoterReportResponse.CreateError(msg, "REPORT_ERROR");
+            }
+        }
+
         #region Helper Methods
 
         private VoterRecord MapVoterRecord(OracleDataReader reader)

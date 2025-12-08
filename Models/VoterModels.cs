@@ -30,6 +30,28 @@ namespace SmkcApi.Models
         }
     }
 
+    public class VoterReportRequest
+    {
+        public string FirstName { get; set; }
+        public string MiddleName { get; set; }
+        public string LastName { get; set; }
+        public string WardDivNo { get; set; }
+        public string EpicNumber { get; set; }
+        public string VoterSerialNo { get; set; }
+        public string Sex { get; set; }
+        public int? AgeMin { get; set; }
+        public int? AgeMax { get; set; }
+        public string DuplicateFlag { get; set; }
+        public string Verified { get; set; }
+        public int? DuplicationId { get; set; }
+        public DateTime? MarkedFromDate { get; set; }
+        public DateTime? MarkedToDate { get; set; }
+        public string SortBy { get; set; } = "SR_NO";
+        public string SortDir { get; set; } = "ASC";
+        public int? PageNumber { get; set; }
+        public int? PageSize { get; set; }
+    }
+
     #endregion
 
     #region Response Models
@@ -139,6 +161,40 @@ namespace SmkcApi.Models
     public class UnverifiedCountResponse
     {
         public int UnverifiedCount { get; set; }
+    }
+
+    public class VoterReportItem : VoterRecord
+    {
+        public DateTime? MarkedDate { get; set; }
+        public string MarkedBy { get; set; }
+        public string Remarks { get; set; }
+    }
+
+    public class VoterReportResponse : ApiResponse<object>
+    {
+        public static VoterReportResponse CreateSuccess(int totalCount, List<VoterReportItem> records)
+        {
+            return new VoterReportResponse
+            {
+                Success = true,
+                Message = "Voter report retrieved successfully",
+                Data = new { totalCount, records },
+                Timestamp = DateTime.UtcNow,
+                RequestId = Guid.NewGuid().ToString()
+            };
+        }
+
+        public static VoterReportResponse CreateError(string message, string code)
+        {
+            return new VoterReportResponse
+            {
+                Success = false,
+                Message = message,
+                ErrorCode = code,
+                Timestamp = DateTime.UtcNow,
+                RequestId = Guid.NewGuid().ToString()
+            };
+        }
     }
 
     #endregion

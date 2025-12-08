@@ -206,6 +206,28 @@
           "path": ["api", "voters", "reset-verification"]
         }
       }
+    },
+    {
+      "name": "10. Voter Report (Filtered & Paginated)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-API-Key", "value": "{{apiKey}}" },
+          { "key": "X-Timestamp", "value": "{{timestamp}}" },
+          { "key": "X-Signature", "value": "{{signature}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Abhishek\",\n  \"middleName\": \"Ajitkumar\",\n  \"lastName\": \"Bedkihale\",\n  \"wardDivNo\": \"001/002\",\n  \"epicNumber\": \"ABC1234567\",\n  \"voterSerialNo\": \"001\",\n  \"sex\": \"M\",\n  \"ageMin\": 18,\n  \"ageMax\": 60,\n  \"duplicateFlag\": \"TRUE\",\n  \"verified\": \"TRUE\",\n  \"duplicationId\": 1001,\n  \"markedFromDate\": \"2025-01-01\",\n  \"markedToDate\": \"2025-12-31\",\n  \"sortBy\": \"SR_NO\",\n  \"sortDir\": \"ASC\",\n  \"pageNumber\": 1,\n  \"pageSize\": 20\n}",
+          "description": "Generates voter report via PROC_GET_VOTER_REPORT with filters, sorting, and pagination. Leave fields null/omit to broaden results. Dates in YYYY-MM-DD."
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/voters/report",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "voters", "report"]
+        }
+      }
     }
   ]
 }

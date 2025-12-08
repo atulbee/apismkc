@@ -214,5 +214,31 @@ namespace SmkcApi.Services
                     "UNVERIFIED_COUNT_ERROR");
             }
         }
+
+        public async Task<VoterReportResponse> GetVoterReportAsync(VoterReportRequest request)
+        {
+            // Basic validation: at least one filter or pagination provided
+            if (request == null)
+                return VoterReportResponse.CreateError("Request body is required", "MISSING_REQUEST_BODY");
+
+            if (string.IsNullOrWhiteSpace(request.FirstName) &&
+                string.IsNullOrWhiteSpace(request.MiddleName) &&
+                string.IsNullOrWhiteSpace(request.LastName) &&
+                string.IsNullOrWhiteSpace(request.WardDivNo) &&
+                string.IsNullOrWhiteSpace(request.EpicNumber) &&
+                string.IsNullOrWhiteSpace(request.VoterSerialNo) &&
+                string.IsNullOrWhiteSpace(request.Sex) &&
+                request.AgeMin == null && request.AgeMax == null &&
+                string.IsNullOrWhiteSpace(request.DuplicateFlag) &&
+                string.IsNullOrWhiteSpace(request.Verified) &&
+                request.DuplicationId == null &&
+                request.MarkedFromDate == null && request.MarkedToDate == null &&
+                request.PageNumber == null && request.PageSize == null)
+            {
+                // allow empty to fetch all but warn
+            }
+
+            return await _repository.GetVoterReportAsync(request);
+        }
     }
 }
