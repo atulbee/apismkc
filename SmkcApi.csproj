@@ -176,7 +176,6 @@
     <Content Include="ORACLE_PROCEDURES_GUIDE.md" />
     <Content Include="ORACLE_EXCEPTION_FIX.md" />
     <Content Include="ORACLEDECIMAL_FIX_COMPLETE.md" />
-    <None Include="packages.config" />
     <Content Include="QUICK_REFERENCE.md" />
     <Content Include="PROJECT_CHECKLIST.md" />
     <Content Include="RefernceDocuments\DuplicateVoterAPI_Endpoints.json" />
@@ -188,6 +187,9 @@
     <Content Include="QUICK_FIX_SUMMARY.md" />
     <Content Include="POSTMAN_HEADERS_FIXED.md" />
     <Content Include="Postman\DuplicateVoterAPI.postman_collection.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
