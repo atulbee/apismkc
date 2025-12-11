@@ -70,10 +70,10 @@ namespace SmkcApi.Services
                         "MISSING_SR_NO_ARRAY");
 
                 // Validate that array has at least 2 items for marking as duplicate
-                if (request.IsDuplicate && request.SrNoArray.Count < 2)
-                    return ApiResponse<MarkDuplicatesResponse>.CreateError(
-                        "At least 2 SR_NO values are required to mark as duplicates", 
-                        "INSUFFICIENT_SR_NO_COUNT");
+                //if (request.IsDuplicate && request.SrNoArray.Count < 2)
+                //    return ApiResponse<MarkDuplicatesResponse>.CreateError(
+                //        "At least 2 SR_NO values are required to mark as duplicates", 
+                //        "INSUFFICIENT_SR_NO_COUNT");
 
                 // Validate all SR_NO values are positive
                 if (request.SrNoArray.Any(x => x <= 0))

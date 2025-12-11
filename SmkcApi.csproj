@@ -95,7 +95,6 @@
   <ItemGroup>
     <Content Include="Global.asax" />
     <Content Include="SQL\PROC_FIND_DUPLICATE_VOTERS_CORRECTED.sql" />
-    <Content Include="TestClient.html" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -166,26 +165,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\API_DOCUMENTATION.md" />
-    <Content Include="IMPLEMENTATION_GUIDE.md" />
-    <Content Include="IMPLEMENTATION_SUMMARY.md" />
-    <Content Include="DEPLOYMENT_READY.md" />
-    <Content Include="INDEX.md" />
-    <Content Include="API_AUTHENTICATION_GUIDE.md" />
-    <Content Include="COMPLETE_DELIVERY_SUMMARY.md" />
-    <Content Include="CORRECTED_CREDENTIALS.md" />
-    <Content Include="ORACLE_PROCEDURES_GUIDE.md" />
-    <Content Include="ORACLE_EXCEPTION_FIX.md" />
-    <Content Include="ORACLEDECIMAL_FIX_COMPLETE.md" />
-    <Content Include="QUICK_REFERENCE.md" />
-    <Content Include="PROJECT_CHECKLIST.md" />
     <Content Include="RefernceDocuments\DuplicateVoterAPI_Endpoints.json" />
     <Content Include="Postman\DuplicateVoterAPI.postman_environment.json" />
     <Content Include="Postman\POSTMAN_TESTING_GUIDE.md" />
-    <Content Include="VOTER_API_SUMMARY.md" />
-    <Content Include="Test-VoterAPI.ps1" />
-    <Content Include="READY_TO_TEST.md" />
-    <Content Include="QUICK_FIX_SUMMARY.md" />
-    <Content Include="POSTMAN_HEADERS_FIXED.md" />
     <Content Include="Postman\DuplicateVoterAPI.postman_collection.json" />
   </ItemGroup>
   <ItemGroup>
